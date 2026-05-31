@@ -33,9 +33,9 @@ resource "aws_iam_role" "glue_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Effect = "Allow",
+      Effect    = "Allow",
       Principal = { Service = "glue.amazonaws.com" },
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 
@@ -113,9 +113,9 @@ resource "aws_iam_role" "sagemaker_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Effect = "Allow",
+      Effect    = "Allow",
       Principal = { Service = "sagemaker.amazonaws.com" },
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 
@@ -143,8 +143,8 @@ resource "aws_iam_role_policy" "sagemaker_policy" {
         ]
       },
       {
-        Effect = "Allow",
-        Action = ["sagemaker:InvokeEndpoint"],
+        Effect   = "Allow",
+        Action   = ["sagemaker:InvokeEndpoint"],
         Resource = var.endpoint_arn
       }
     ]
@@ -199,9 +199,9 @@ resource "aws_iam_role" "lambda_glue_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Effect = "Allow",
+      Effect    = "Allow",
       Principal = { Service = "lambda.amazonaws.com" },
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 }
@@ -213,8 +213,8 @@ resource "aws_iam_role_policy" "lambda_glue_policy" {
     Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow",
-        Action = ["glue:StartJobRun"],
+        Effect   = "Allow",
+        Action   = ["glue:StartJobRun"],
         Resource = aws_glue_job.fraud_etl.arn
       },
       {
