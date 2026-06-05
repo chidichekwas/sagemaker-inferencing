@@ -1,0 +1,90 @@
+name: Deploy Fraud Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "pipeline.py"
+      - "scripts/**"
+      - "terraform/**"
+      - "tests/**"
+      - ".github/workflows/deploy-pipeline.yml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: us-east-1
+      TF_IN_AUTOMATION: true
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Install AWS CLI
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y unzip
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install Python dependencies
+      run: |
+        pip install "sagemaker==2.218.0" "boto3==1.34.0" pytest
+
+    - name: Run unit tests
+      run: pytest -q
+
+    - name: Install Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.7.5
+
+    - name: Terraform Init
+      working-directory: terraform
+      run: terraform init
+
+    - name: Terraform Apply
+      working-directory: terraform
+      run: terraform apply -auto-approve
+
+    - name: Upload scripts to S3
+      run: |
+        aws s3 cp scripts/inference_script_v2.py s3://sagemaker-s3-chidi/fraud/scripts/inference_script_v2.py
+        aws s3 cp scripts/postprocess.py s3://sagemaker-s3-chidi/fraud/scripts/postprocess.py
+
+    - name: Update and run SageMaker Pipeline
+      run: python pipeline.py
+
+    - name: Get latest pipeline execution ARN
+      id: latest_exec
+      run: |
+        ARN=$(aws sagemaker list-pipeline-executions \
+          --pipeline-name fraud-realtime-inference-pipeline \
+          --max-results 1 \
+          --query "PipelineExecutionSummaries[0].PipelineExecutionArn" \
+          --output text)
+        echo "arn=$ARN" >> $GITHUB_OUTPUT
+
+    - name: Notify Slack
+      if: always()
+      run: |
+        STATUS="${{ job.status }}"
+        ARN="${{ steps.latest_exec.outputs.arn }}"
+        curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\":rocket: Fraud pipeline run *${STATUS}*.\nExecution ARN: \`${ARN}\`\"}" \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
