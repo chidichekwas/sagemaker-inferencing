@@ -1,0 +1,36 @@
+# Local .terraform directories
+.terraform/
+
+# Terraform state files
+terraform.tfstate
+terraform.tfstate.backup
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Ignore override files (used for local-only config)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore variable files with sensitive data
+*.tfvars
+*.tfvars.json
+
+# Ignore Terraform lock file (optional)
+.terraform.lock.hcl
+
+# Python virtual environments (since you're using myenv)
+venv/
+myenv/
+.env/
+__pycache__/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# ZIPs for Lambda functions (optional but recommended)
+*.zip
