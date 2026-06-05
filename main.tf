@@ -20,7 +20,7 @@ resource "aws_iam_role_policy" "lambda_start_pipeline_policy" {
       {
         Effect = "Allow"
         Action = ["sagemaker:StartPipelineExecution"]
-        Resource = "arn:aws:sagemaker:us-east-1:148622480762:pipeline/fraud-realtime-inference-pipeline"
+        Resource = "arn:aws:sagemaker:${var.aws_region}:${var.account_id}:pipeline/${var.pipeline_name}"
       },
       {
         Effect = "Allow"
@@ -36,17 +36,16 @@ resource "aws_iam_role_policy" "lambda_start_pipeline_policy" {
 }
 
 resource "aws_lambda_function" "start_pipeline" {
-  function_name = "start-fraud-pipeline-on-s3"
+  function_name = var.lambda_function_name
   role          = aws_iam_role.lambda_start_pipeline_role.arn
   handler       = "start_pipeline.lambda_handler"
   runtime       = "python3.10"
 
-  # FIXED: correct ZIP file path
-  filename      = "${path.module}/lambda/lambda_start_pipeline.zip"
+  filename = var.lambda_zip_path
 
   environment {
     variables = {
-      PIPELINE_NAME = "fraud-realtime-inference-pipeline"
+      PIPELINE_NAME = var.pipeline_name
     }
   }
 }
@@ -56,11 +55,11 @@ resource "aws_lambda_permission" "allow_s3_invoke" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.start_pipeline.function_name
   principal     = "s3.amazonaws.com"
-  source_arn    = "arn:aws:s3:::sagemaker-s3-chidi"
+  source_arn    = "arn:aws:s3:::${var.bucket_name}"
 }
 
 resource "aws_s3_bucket_notification" "fraud_processed_trigger" {
-  bucket = "sagemaker-s3-chidi"
+  bucket = var.bucket_name
 
   lambda_function {
     lambda_function_arn = aws_lambda_function.start_pipeline.arn

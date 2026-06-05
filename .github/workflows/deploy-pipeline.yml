@@ -16,6 +16,9 @@ jobs:
 
     env:
       AWS_REGION: us-east-1
+      PIPELINE_NAME: fraud-realtime-inference-pipeline
+      BUCKET_NAME: sagemaker-s3-chidi
+      ACCOUNT_ID: 148622480762
       TF_IN_AUTOMATION: true
 
     steps:
@@ -60,12 +63,17 @@ jobs:
 
     - name: Terraform Apply
       working-directory: terraform
-      run: terraform apply -auto-approve
+      run: |
+        terraform apply -auto-approve \
+          -var="aws_region=${{ env.AWS_REGION }}" \
+          -var="pipeline_name=${{ env.PIPELINE_NAME }}" \
+          -var="bucket_name=${{ env.BUCKET_NAME }}" \
+          -var="account_id=${{ env.ACCOUNT_ID }}"
 
     - name: Upload scripts to S3
       run: |
-        aws s3 cp scripts/inference_script_v2.py s3://sagemaker-s3-chidi/fraud/scripts/inference_script_v2.py
-        aws s3 cp scripts/postprocess.py s3://sagemaker-s3-chidi/fraud/scripts/postprocess.py
+        aws s3 cp scripts/inference_script_v2.py s3://${{ env.BUCKET_NAME }}/fraud/scripts/inference_script_v2.py
+        aws s3 cp scripts/postprocess.py s3://${{ env.BUCKET_NAME }}/fraud/scripts/postprocess.py
 
     - name: Update and run SageMaker Pipeline
       run: python pipeline.py
@@ -74,7 +82,7 @@ jobs:
       id: latest_exec
       run: |
         ARN=$(aws sagemaker list-pipeline-executions \
-          --pipeline-name fraud-realtime-inference-pipeline \
+          --pipeline-name ${{ env.PIPELINE_NAME }} \
           --max-results 1 \
           --query "PipelineExecutionSummaries[0].PipelineExecutionArn" \
           --output text)
