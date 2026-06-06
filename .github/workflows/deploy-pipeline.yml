@@ -83,10 +83,14 @@ jobs:
         echo "arn=$ARN" >> $GITHUB_OUTPUT
 
     - name: Notify Slack
-      if: always() && secrets.SLACK_WEBHOOK_URL != ''
+      if: always()
       run: |
-        STATUS="${{ job.status }}"
-        ARN="${{ steps.latest_exec.outputs.arn }}"
-        curl -X POST -H 'Content-type: application/json' \
-          --data "{\"text\":\":rocket: Fraud pipeline run *${STATUS}*.\nExecution ARN: \`${ARN}\`\"}" \
-          ${{ secrets.SLACK_WEBHOOK_URL }}
+        if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+          STATUS="${{ job.status }}"
+          ARN="${{ steps.latest_exec.outputs.arn }}"
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\":rocket: Fraud pipeline run *${STATUS}*.\nExecution ARN: \`${ARN}\`\"}" \
+            ${{ secrets.SLACK_WEBHOOK_URL }}
+        else
+          echo "Slack webhook not set. Skipping notification."
+        fi
