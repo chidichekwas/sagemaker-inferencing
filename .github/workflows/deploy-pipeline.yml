@@ -6,7 +6,8 @@ on:
     paths:
       - "pipeline.py"
       - "scripts/**"
-      - "terraform/**"
+      - "lambda/**"
+      - "*.tf"
       - "tests/**"
       - ".github/workflows/deploy-pipeline.yml"
 
@@ -32,8 +33,6 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    # AWS CLI install removed — GitHub runners already include AWS CLI v2
-
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -55,11 +54,11 @@ jobs:
         terraform_version: 1.7.5
 
     - name: Terraform Init
-      working-directory: terraform
+      working-directory: .
       run: terraform init
 
     - name: Terraform Apply
-      working-directory: terraform
+      working-directory: .
       run: |
         terraform apply -auto-approve \
           -var="aws_region=${{ env.AWS_REGION }}" \
