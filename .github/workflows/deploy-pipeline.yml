@@ -43,6 +43,9 @@ jobs:
       run: |
         pip install "sagemaker==2.218.0" "boto3==1.34.0" pytest
 
+    - name: Add repo to PYTHONPATH
+      run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
+
     - name: Run unit tests
       run: pytest -q
 
